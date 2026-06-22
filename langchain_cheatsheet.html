@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangChain Cheatsheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --p1: #7c3aed;
+    --p2: #a855f7;
+    --p3: #c084fc;
+    --pk1: #ec4899;
+    --pk2: #f472b6;
+    --pk3: #fbcfe8;
+    --bg: #ffffff;
+    --surface: #fdf8ff;
+    --border: #e9d5ff;
+    --text: #1e1b4b;
+    --muted: #6b7280;
+    --code-bg: #f3e8ff;
+    --code-text: #5b21b6;
+    --keyword: #7c3aed;
+    --string: #be185d;
+    --comment: #9ca3af;
+    --builtin: #0369a1;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 1400px;
+    margin: 0 auto;
+    padding: 40px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 30%, #a855f7 55%, #ec4899 80%, #f472b6 100%);
+    border-radius: 20px;
+    padding: 36px 48px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 80% 50%, rgba(255,255,255,0.15) 0%, transparent 60%);
+  }
+  .header-content { position: relative; z-index: 1; }
+  .header h1 {
+    font-size: 42px; font-weight: 900; color: #fff;
+    letter-spacing: -1px; line-height: 1.1;
+  }
+  .header h1 span { color: #fde68a; }
+  .header p {
+    color: rgba(255,255,255,0.85); font-size: 15px; margin-top: 8px;
+    font-weight: 500; letter-spacing: 0.3px;
+  }
+  .header-badges {
+    display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .badge {
+    background: rgba(255,255,255,0.2); color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 4px 14px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .grid-2col { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .card-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .card-subtitle {
+    font-size: 10px; color: var(--muted); font-weight: 500;
+    margin-top: 1px;
+  }
+  .card-body { padding: 16px 18px; }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    line-height: 1.65;
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--p2);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  pre:last-child { margin-bottom: 0; }
+
+  .kw   { color: var(--keyword); font-weight: 700; }
+  .st   { color: var(--string); }
+  .cm   { color: var(--comment); font-style: italic; }
+  .fn   { color: #0891b2; font-weight: 600; }
+  .cl   { color: #7c3aed; font-weight: 700; }
+  .num  { color: #d97706; }
+  .at   { color: #0f766e; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--p1);
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1.5px;
+    background: linear-gradient(90deg, var(--p3), transparent);
+    border-radius: 2px;
+  }
+
+  /* color themes per card */
+  .theme-purple .card-header { background: linear-gradient(90deg, #ede9fe, #fce7f3); }
+  .theme-purple .card-icon   { background: linear-gradient(135deg, var(--p1), var(--pk1)); }
+  .theme-pink .card-header   { background: linear-gradient(90deg, #fce7f3, #ede9fe); }
+  .theme-pink .card-icon     { background: linear-gradient(135deg, var(--pk1), var(--p2)); }
+  .theme-violet .card-header { background: linear-gradient(90deg, #ddd6fe, #fbcfe8); }
+  .theme-violet .card-icon   { background: linear-gradient(135deg, #5b21b6, var(--p1)); }
+
+  .full-col { grid-column: 1 / -1; }
+  .two-col  { grid-column: span 2; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 28px;
+    padding: 16px 24px;
+    background: linear-gradient(90deg, #ede9fe, #fce7f3);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer p { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  .footer strong { color: var(--p1); }
+
+  /* ── METHOD TABLE ── */
+  .method-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .method-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    font-size: 10.5px;
+  }
+  .method-name {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    color: var(--p1); min-width: 120px; flex-shrink: 0;
+  }
+  .method-desc { color: var(--muted); line-height: 1.45; }
+
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 10px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-content">
+    <h1>🦜 <span>LangChain</span> Cheatsheet</h1>
+    <p>All core components — imports · classes · key methods · quick examples</p>
+    <div class="header-badges">
+      <span class="badge">LLMs & Chat Models</span>
+      <span class="badge">Prompt Templates</span>
+      <span class="badge">Chains</span>
+      <span class="badge">Memory</span>
+      <span class="badge">Agents & Tools</span>
+      <span class="badge">Retrievers & RAG</span>
+      <span class="badge">Output Parsers</span>
+      <span class="badge">Embeddings</span>
+      <span class="badge">Vector Stores</span>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 1 -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <!-- LLMs -->
+  <div class="card theme-purple">
+    <div class="card-header">
+      <div class="card-icon">🤖</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">LLMs & Chat Models</div>
+        <div class="card-subtitle">Core language model wrappers</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="cm"># OpenAI LLM</span>
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> <span class="cl">OpenAI</span>, <span class="cl">ChatOpenAI</span>
+<span class="kw">from</span> langchain_google_genai <span class="kw">import</span> <span class="cl">ChatGoogleGenerativeAI</span>
+<span class="kw">from</span> langchain_community.llms <span class="kw">import</span> <span class="cl">Ollama</span>
+
+llm = <span class="cl">OpenAI</span>(model=<span class="st">"gpt-3.5-turbo-instruct"</span>,
+              temperature=<span class="num">0.7</span>, max_tokens=<span class="num">500</span>)
+
+chat = <span class="cl">ChatOpenAI</span>(model=<span class="st">"gpt-4o"</span>, temperature=<span class="num">0</span>)</pre>
+<pre><span class="cm"># Invoke methods</span>
+resp = llm.<span class="fn">invoke</span>(<span class="st">"Tell me a joke"</span>)
+resp = <span class="kw">await</span> llm.<span class="fn">ainvoke</span>(<span class="st">"async call"</span>)
+
+<span class="cm"># Stream output token by token</span>
+<span class="kw">for</span> chunk <span class="kw">in</span> chat.<span class="fn">stream</span>(<span class="st">"Explain AI"</span>):
+    print(chunk.content, end=<span class="st">""</span>, flush=<span class="num">True</span>)
+
+<span class="cm"># Batch multiple prompts</span>
+resps = llm.<span class="fn">batch</span>([<span class="st">"Q1"</span>, <span class="st">"Q2"</span>, <span class="st">"Q3"</span>])</pre>
+    </div>
+  </div>
+
+  <!-- PROMPT TEMPLATES -->
+  <div class="card theme-pink">
+    <div class="card-header">
+      <div class="card-icon">📝</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Prompt Templates</div>
+        <div class="card-subtitle">Dynamic prompt construction</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> (
+    <span class="cl">PromptTemplate</span>,
+    <span class="cl">ChatPromptTemplate</span>,
+    <span class="cl">FewShotPromptTemplate</span>,
+    <span class="cl">MessagesPlaceholder</span>
+)</pre>
+<pre><span class="cm"># String prompt</span>
+pt = <span class="cl">PromptTemplate</span>(
+    template=<span class="st">"Explain {topic} in {language}"</span>,
+    input_variables=[<span class="st">"topic"</span>, <span class="st">"language"</span>])
+pt.<span class="fn">format</span>(topic=<span class="st">"AI"</span>, language=<span class="st">"Urdu"</span>)
+
+<span class="cm"># Chat prompt (system + human)</span>
+cpt = <span class="cl">ChatPromptTemplate</span>.<span class="fn">from_messages</span>([
+    (<span class="st">"system"</span>, <span class="st">"You are {role}"</span>),
+    (<span class="st">"human"</span>,  <span class="st">"{question}"</span>)
+])
+msgs = cpt.<span class="fn">format_messages</span>(
+    role=<span class="st">"a tutor"</span>, question=<span class="st">"What is ML?"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- OUTPUT PARSERS -->
+  <div class="card theme-violet">
+    <div class="card-header">
+      <div class="card-icon">🔍</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Output Parsers</div>
+        <div class="card-subtitle">Parse & structure LLM output</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> (
+    <span class="cl">StrOutputParser</span>,      <span class="cm"># plain text</span>
+    <span class="cl">JsonOutputParser</span>,     <span class="cm"># JSON dict</span>
+    <span class="cl">CommaSeparatedListOutputParser</span>
+)
+<span class="kw">from</span> langchain.output_parsers <span class="kw">import</span> (
+    <span class="cl">PydanticOutputParser</span>,
+    <span class="cl">StructuredOutputParser</span>
+)</pre>
+<pre><span class="cm"># StrOutputParser</span>
+parser = <span class="cl">StrOutputParser</span>()
+chain  = prompt | llm | parser
+
+<span class="cm"># Pydantic structured output</span>
+<span class="kw">from</span> pydantic <span class="kw">import</span> <span class="cl">BaseModel</span>
+<span class="kw">class</span> <span class="cl">Answer</span>(<span class="cl">BaseModel</span>):
+    topic: str; confidence: float
+
+parser = <span class="cl">PydanticOutputParser</span>(pydantic_object=<span class="cl">Answer</span>)
+fmt = parser.<span class="fn">get_format_instructions</span>()
+result = parser.<span class="fn">parse</span>(llm_output)</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ROW 2 -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <!-- CHAINS LCEL -->
+  <div class="card theme-purple two-col">
+    <div class="card-header">
+      <div class="card-icon">⛓️</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">Chains — LCEL (LangChain Expression Language)</div>
+        <div class="card-subtitle">Composable pipeline with | operator</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-2col" style="gap:12px;">
+        <div>
+<pre><span class="kw">from</span> langchain_core.runnables <span class="kw">import</span> (
+    <span class="cl">RunnablePassthrough</span>,
+    <span class="cl">RunnableParallel</span>,
+    <span class="cl">RunnableLambda</span>,
+    <span class="cl">RunnableSequence</span>
+)
+
+<span class="cm"># Basic LCEL chain</span>
+chain = prompt | llm | <span class="cl">StrOutputParser</span>()
+result = chain.<span class="fn">invoke</span>({<span class="st">"topic"</span>: <span class="st">"ML"</span>})
+
+<span class="cm"># Parallel execution</span>
+parallel = <span class="cl">RunnableParallel</span>(
+    summary=summarize_chain,
+    keywords=keyword_chain
+)
+parallel.<span class="fn">invoke</span>({<span class="st">"text"</span>: doc})</pre>
+        </div>
+        <div>
+<pre><span class="cm"># Pass-through (inject context)</span>
+chain = (
+    <span class="cl">RunnablePassthrough</span>.<span class="fn">assign</span>(
+        context=<span class="kw">lambda</span> x: retriever.<span class="fn">invoke</span>(x[<span class="st">"question"</span>])
+    )
+    | prompt | llm | <span class="cl">StrOutputParser</span>()
+)
+
+<span class="cm"># Lambda for custom transform</span>
+upper = <span class="cl">RunnableLambda</span>(<span class="kw">lambda</span> x: x.upper())
+
+<span class="cm"># Methods on any chain</span>
+chain.<span class="fn">invoke</span>(input_dict)
+chain.<span class="fn">batch</span>([dict1, dict2])
+<span class="kw">async for</span> tok <span class="kw">in</span> chain.<span class="fn">astream</span>(inp): ...
+chain.<span class="fn">get_graph</span>().<span class="fn">print_ascii</span>()  <span class="cm"># visualize</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY -->
+  <div class="card theme-pink">
+    <div class="card-header">
+      <div class="card-icon">🧠</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Memory</div>
+        <div class="card-subtitle">Conversation history management</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain.memory <span class="kw">import</span> (
+    <span class="cl">ConversationBufferMemory</span>,
+    <span class="cl">ConversationBufferWindowMemory</span>,
+    <span class="cl">ConversationSummaryMemory</span>,
+    <span class="cl">ConversationTokenBufferMemory</span>
+)
+<span class="kw">from</span> langchain_core.chat_history <span class="kw">import</span> <span class="cl">BaseChatMessageHistory</span>
+<span class="kw">from</span> langchain_community.chat_message_histories <span class="kw">import</span> <span class="cl">ChatMessageHistory</span></pre>
+<pre>mem = <span class="cl">ConversationBufferMemory</span>(return_messages=<span class="num">True</span>)
+mem.<span class="fn">save_context</span>({<span class="st">"input"</span>:<span class="st">"Hi"</span>},{<span class="st">"output"</span>:<span class="st">"Hello!"</span>})
+mem.<span class="fn">load_memory_variables</span>({})  <span class="cm"># → {"history": [...]}</span>
+
+<span class="cm"># Window memory (last k turns)</span>
+mem = <span class="cl">ConversationBufferWindowMemory</span>(k=<span class="num">5</span>)
+
+<span class="cm"># Summary memory (compress old turns)</span>
+mem = <span class="cl">ConversationSummaryMemory</span>(llm=llm)</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 3 -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <!-- EMBEDDINGS -->
+  <div class="card theme-violet">
+    <div class="card-header">
+      <div class="card-icon">🔢</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Embeddings</div>
+        <div class="card-subtitle">Text → vector representations</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_openai <span class="kw">import</span> <span class="cl">OpenAIEmbeddings</span>
+<span class="kw">from</span> langchain_huggingface <span class="kw">import</span> <span class="cl">HuggingFaceEmbeddings</span>
+<span class="kw">from</span> langchain_google_genai <span class="kw">import</span> <span class="cl">GoogleGenerativeAIEmbeddings</span>
+
+emb = <span class="cl">OpenAIEmbeddings</span>(model=<span class="st">"text-embedding-3-small"</span>)
+
+<span class="cm"># Embed a single query</span>
+vec = emb.<span class="fn">embed_query</span>(<span class="st">"What is RAG?"</span>)
+
+<span class="cm"># Embed many documents</span>
+vecs = emb.<span class="fn">embed_documents</span>([<span class="st">"doc1"</span>, <span class="st">"doc2"</span>])
+
+<span class="cm"># HuggingFace (local / free)</span>
+emb = <span class="cl">HuggingFaceEmbeddings</span>(
+    model_name=<span class="st">"sentence-transformers/all-MiniLM-L6-v2"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- VECTOR STORES -->
+  <div class="card theme-purple">
+    <div class="card-header">
+      <div class="card-icon">🗄️</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">Vector Stores</div>
+        <div class="card-subtitle">Store & search embeddings</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_community.vectorstores <span class="kw">import</span> (
+    <span class="cl">FAISS</span>, <span class="cl">Chroma</span>, <span class="cl">Pinecone</span>
+)
+
+<span class="cm"># Build from documents</span>
+db = <span class="cl">FAISS</span>.<span class="fn">from_documents</span>(docs, emb)
+db = <span class="cl">Chroma</span>.<span class="fn">from_documents</span>(docs, emb,
+        persist_directory=<span class="st">"./chroma_db"</span>)
+
+<span class="cm"># Search</span>
+results = db.<span class="fn">similarity_search</span>(<span class="st">"query"</span>, k=<span class="num">4</span>)
+results = db.<span class="fn">similarity_search_with_score</span>(<span class="st">"q"</span>)
+results = db.<span class="fn">max_marginal_relevance_search</span>(<span class="st">"q"</span>)
+
+<span class="cm"># Add more docs later</span>
+db.<span class="fn">add_documents</span>(new_docs)
+db.<span class="fn">save_local</span>(<span class="st">"faiss_index"</span>)
+db2 = <span class="cl">FAISS</span>.<span class="fn">load_local</span>(<span class="st">"faiss_index"</span>, emb)</pre>
+    </div>
+  </div>
+
+  <!-- RETRIEVERS -->
+  <div class="card theme-pink">
+    <div class="card-header">
+      <div class="card-icon">🔎</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Retrievers</div>
+        <div class="card-subtitle">Fetch relevant docs for RAG</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.retrievers <span class="kw">import</span> <span class="cl">BaseRetriever</span>
+<span class="kw">from</span> langchain.retrievers <span class="kw">import</span> (
+    <span class="cl">ContextualCompressionRetriever</span>,
+    <span class="cl">MultiQueryRetriever</span>,
+    <span class="cl">EnsembleRetriever</span>,
+    <span class="cl">BM25Retriever</span>
+)
+
+<span class="cm"># VectorStore → Retriever</span>
+retriever = db.<span class="fn">as_retriever</span>(search_kwargs={<span class="st">"k"</span>:<span class="num">5</span>})
+
+<span class="cm"># Multi-query (generates N queries)</span>
+mq = <span class="cl">MultiQueryRetriever</span>.<span class="fn">from_llm</span>(retriever, llm)
+
+<span class="cm"># Invoke</span>
+docs = retriever.<span class="fn">invoke</span>(<span class="st">"question"</span>)
+docs = <span class="kw">await</span> retriever.<span class="fn">ainvoke</span>(<span class="st">"question"</span>)</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 4 — Document Loaders + Text Splitters -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <div class="card theme-violet">
+    <div class="card-header">
+      <div class="card-icon">📄</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Document Loaders</div>
+        <div class="card-subtitle">Load data from any source</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_community.document_loaders <span class="kw">import</span> (
+    <span class="cl">PyPDFLoader</span>,      <span class="cm"># PDF files</span>
+    <span class="cl">CSVLoader</span>,         <span class="cm"># CSV files</span>
+    <span class="cl">TextLoader</span>,        <span class="cm"># .txt files</span>
+    <span class="cl">WebBaseLoader</span>,     <span class="cm"># URLs</span>
+    <span class="cl">DirectoryLoader</span>,   <span class="cm"># whole folder</span>
+    <span class="cl">UnstructuredPDFLoader</span>
+)
+
+loader = <span class="cl">PyPDFLoader</span>(<span class="st">"report.pdf"</span>)
+docs   = loader.<span class="fn">load</span>()          <span class="cm"># list of Documents</span>
+docs   = loader.<span class="fn">load_and_split</span>()
+
+<span class="cm"># Web loader</span>
+loader = <span class="cl">WebBaseLoader</span>(<span class="st">"https://example.com"</span>)
+docs   = loader.<span class="fn">load</span>()</pre>
+    </div>
+  </div>
+
+  <div class="card theme-purple">
+    <div class="card-header">
+      <div class="card-icon">✂️</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">Text Splitters</div>
+        <div class="card-subtitle">Chunk documents for retrieval</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> (
+    <span class="cl">RecursiveCharacterTextSplitter</span>,  <span class="cm"># best default</span>
+    <span class="cl">CharacterTextSplitter</span>,
+    <span class="cl">TokenTextSplitter</span>,
+    <span class="cl">MarkdownHeaderTextSplitter</span>
+)
+
+splitter = <span class="cl">RecursiveCharacterTextSplitter</span>(
+    chunk_size=<span class="num">1000</span>,
+    chunk_overlap=<span class="num">200</span>,
+    separators=[<span class="st">"\n\n"</span>, <span class="st">"\n"</span>, <span class="st">" "</span>, <span class="st">""</span>]
+)
+chunks = splitter.<span class="fn">split_documents</span>(docs)
+chunks = splitter.<span class="fn">split_text</span>(<span class="st">"raw string"</span>)
+chunks = splitter.<span class="fn">create_documents</span>([text1, text2])</pre>
+    </div>
+  </div>
+
+  <div class="card theme-pink">
+    <div class="card-header">
+      <div class="card-icon">🗺️</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Document Object</div>
+        <div class="card-subtitle">Core data structure in LangChain</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.documents <span class="kw">import</span> <span class="cl">Document</span>
+
+<span class="cm"># Create manually</span>
+doc = <span class="cl">Document</span>(
+    page_content=<span class="st">"LangChain is awesome"</span>,
+    metadata={<span class="st">"source"</span>: <span class="st">"notes.pdf"</span>, <span class="st">"page"</span>: <span class="num">1</span>}
+)
+
+<span class="cm"># Access fields</span>
+doc.page_content   <span class="cm"># the text</span>
+doc.metadata       <span class="cm"># dict of info</span>
+
+<span class="cm"># Filter docs by metadata</span>
+filtered = [d <span class="kw">for</span> d <span class="kw">in</span> docs
+            <span class="kw">if</span> d.metadata[<span class="st">"source"</span>] == <span class="st">"notes.pdf"</span>]</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 5 — Agents & Tools -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <div class="card theme-violet two-col">
+    <div class="card-header">
+      <div class="card-icon">🤖</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Agents & Tools</div>
+        <div class="card-subtitle">ReAct / Tool-calling agents with autonomous decision-making</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-2col" style="gap:12px;">
+        <div>
+<pre><span class="kw">from</span> langchain.agents <span class="kw">import</span> (
+    <span class="fn">create_react_agent</span>,
+    <span class="fn">create_tool_calling_agent</span>,
+    <span class="fn">AgentExecutor</span>
+)
+<span class="kw">from</span> langchain_core.tools <span class="kw">import</span> tool
+<span class="kw">from</span> langchain_community.tools <span class="kw">import</span> (
+    <span class="cl">DuckDuckGoSearchRun</span>,
+    <span class="cl">WikipediaQueryRun</span>,
+    <span class="cl">PythonREPLTool</span>
+)
+
+<span class="cm"># Define a custom tool</span>
+<span class="at">@tool</span>
+<span class="kw">def</span> <span class="fn">calculator</span>(expr: str) -> str:
+    <span class="st">"""Evaluate math expression"""</span>
+    <span class="kw">return</span> str(<span class="fn">eval</span>(expr))</pre>
+        </div>
+        <div>
+<pre><span class="cm"># Build agent</span>
+tools = [<span class="cl">DuckDuckGoSearchRun</span>(), calculator]
+agent = <span class="fn">create_tool_calling_agent</span>(llm, tools, prompt)
+
+executor = <span class="cl">AgentExecutor</span>(
+    agent=agent,
+    tools=tools,
+    verbose=<span class="num">True</span>,
+    max_iterations=<span class="num">10</span>,
+    handle_parsing_errors=<span class="num">True</span>
+)
+
+result = executor.<span class="fn">invoke</span>({<span class="st">"input"</span>: <span class="st">"What is 42*9?"</span>})
+print(result[<span class="st">"output"</span>])
+
+<span class="cm"># Stream agent steps</span>
+<span class="kw">for</span> step <span class="kw">in</span> executor.<span class="fn">stream</span>({<span class="st">"input"</span>: <span class="st">"search AI news"</span>}):
+    print(step)</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card theme-purple">
+    <div class="card-header">
+      <div class="card-icon">💬</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">Messages API</div>
+        <div class="card-subtitle">HumanMessage, AIMessage, SystemMessage</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.messages <span class="kw">import</span> (
+    <span class="cl">HumanMessage</span>,
+    <span class="cl">AIMessage</span>,
+    <span class="cl">SystemMessage</span>,
+    <span class="cl">ToolMessage</span>,
+    <span class="cl">BaseMessage</span>
+)
+
+msgs = [
+  <span class="cl">SystemMessage</span>(content=<span class="st">"You are a helpful AI."</span>),
+  <span class="cl">HumanMessage</span>(content=<span class="st">"What is LangChain?"</span>)
+]
+response = chat.<span class="fn">invoke</span>(msgs)
+<span class="cm"># response → AIMessage(content="...")</span>
+print(response.content)</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 6 — RAG Full Pipeline + Callbacks -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <div class="card theme-pink two-col">
+    <div class="card-header">
+      <div class="card-icon">🔗</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Full RAG Pipeline</div>
+        <div class="card-subtitle">Complete Retrieval-Augmented Generation with LCEL</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_openai <span class="kw">import</span> <span class="cl">ChatOpenAI</span>, <span class="cl">OpenAIEmbeddings</span>
+<span class="kw">from</span> langchain_community.vectorstores <span class="kw">import</span> <span class="cl">FAISS</span>
+<span class="kw">from</span> langchain_community.document_loaders <span class="kw">import</span> <span class="cl">PyPDFLoader</span>
+<span class="kw">from</span> langchain.text_splitter <span class="kw">import</span> <span class="cl">RecursiveCharacterTextSplitter</span>
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> <span class="cl">ChatPromptTemplate</span>
+<span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> <span class="cl">StrOutputParser</span>
+<span class="kw">from</span> langchain_core.runnables <span class="kw">import</span> <span class="cl">RunnablePassthrough</span>
+
+<span class="cm"># 1. Load → Split → Embed → Store</span>
+docs    = <span class="cl">PyPDFLoader</span>(<span class="st">"data.pdf"</span>).<span class="fn">load</span>()
+chunks  = <span class="cl">RecursiveCharacterTextSplitter</span>(chunk_size=<span class="num">1000</span>, chunk_overlap=<span class="num">200</span>).<span class="fn">split_documents</span>(docs)
+db      = <span class="cl">FAISS</span>.<span class="fn">from_documents</span>(chunks, <span class="cl">OpenAIEmbeddings</span>())
+retriever = db.<span class="fn">as_retriever</span>(search_kwargs={<span class="st">"k"</span>: <span class="num">4</span>})
+
+<span class="cm"># 2. Prompt</span>
+prompt = <span class="cl">ChatPromptTemplate</span>.<span class="fn">from_template</span>(<span class="st">"""
+Answer using the context below. If unknown, say "I don't know."
+Context: {context}
+Question: {question}"""</span>)
+
+<span class="cm"># 3. Chain</span>
+rag_chain = (
+    {<span class="st">"context"</span>: retriever, <span class="st">"question"</span>: <span class="cl">RunnablePassthrough</span>()}
+    | prompt | <span class="cl">ChatOpenAI</span>() | <span class="cl">StrOutputParser</span>()
+)
+answer = rag_chain.<span class="fn">invoke</span>(<span class="st">"What is the main finding?"</span>)</pre>
+    </div>
+  </div>
+
+  <div class="card theme-violet">
+    <div class="card-header">
+      <div class="card-icon">📡</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Callbacks</div>
+        <div class="card-subtitle">Logging, tracing, monitoring</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain.callbacks <span class="kw">import</span> (
+    <span class="cl">StdOutCallbackHandler</span>,
+    <span class="cl">StreamingStdOutCallbackHandler</span>
+)
+<span class="kw">from</span> langchain.callbacks.manager <span class="kw">import</span> <span class="cl">CallbackManager</span>
+
+<span class="cm"># Attach to LLM</span>
+llm = <span class="cl">ChatOpenAI</span>(
+    streaming=<span class="num">True</span>,
+    callbacks=[<span class="cl">StreamingStdOutCallbackHandler</span>()]
+)
+
+<span class="cm"># LangSmith tracing (set env vars)</span>
+<span class="kw">import</span> os
+os.environ[<span class="st">"LANGCHAIN_TRACING_V2"</span>] = <span class="st">"true"</span>
+os.environ[<span class="st">"LANGCHAIN_API_KEY"</span>]    = <span class="st">"ls_..."</span>
+os.environ[<span class="st">"LANGCHAIN_PROJECT"</span>]    = <span class="st">"my-project"</span></pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ROW 7 — LangGraph + Environment Setup -->
+<div class="grid" style="margin-bottom:20px;">
+
+  <div class="card theme-purple">
+    <div class="card-header">
+      <div class="card-icon">🌐</div>
+      <div>
+        <div class="card-title" style="color:#5b21b6;">LangGraph Basics</div>
+        <div class="card-subtitle">Stateful multi-agent workflows</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langgraph.graph <span class="kw">import</span> <span class="cl">StateGraph</span>, <span class="cl">END</span>
+<span class="kw">from</span> typing <span class="kw">import</span> TypedDict
+
+<span class="kw">class</span> <span class="cl">State</span>(<span class="cl">TypedDict</span>):
+    messages: list; next_step: str
+
+<span class="kw">def</span> <span class="fn">agent_node</span>(state): ...
+<span class="kw">def</span> <span class="fn">tool_node</span>(state):  ...
+
+graph = <span class="cl">StateGraph</span>(<span class="cl">State</span>)
+graph.<span class="fn">add_node</span>(<span class="st">"agent"</span>, agent_node)
+graph.<span class="fn">add_node</span>(<span class="st">"tools"</span>, tool_node)
+graph.<span class="fn">set_entry_point</span>(<span class="st">"agent"</span>)
+graph.<span class="fn">add_edge</span>(<span class="st">"tools"</span>, <span class="st">"agent"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="st">"agent"</span>,
+    <span class="kw">lambda</span> s: s[<span class="st">"next_step"</span>],
+    {<span class="st">"tools"</span>: <span class="st">"tools"</span>, <span class="st">"done"</span>: <span class="cl">END</span>})
+app = graph.<span class="fn">compile</span>()
+app.<span class="fn">invoke</span>({<span class="st">"messages"</span>: [<span class="st">"Start"</span>]})</pre>
+    </div>
+  </div>
+
+  <div class="card theme-pink">
+    <div class="card-header">
+      <div class="card-icon">⚙️</div>
+      <div>
+        <div class="card-title" style="color:#be185d;">Environment Setup</div>
+        <div class="card-subtitle">Install packages & set API keys</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="cm"># Install</span>
+pip install langchain langchain-openai
+pip install langchain-community langchain-core
+pip install langchain-google-genai langgraph
+pip install faiss-cpu chromadb sentence-transformers
+
+<span class="cm"># API keys (in .env or environment)</span>
+<span class="kw">import</span> os
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="fn">load_dotenv</span>()
+
+os.environ[<span class="st">"OPENAI_API_KEY"</span>]  = <span class="st">"sk-..."</span>
+os.environ[<span class="st">"GOOGLE_API_KEY"</span>]  = <span class="st">"AIza..."</span>
+os.environ[<span class="st">"TAVILY_API_KEY"</span>]  = <span class="st">"tvly-..."</span>
+
+<span class="cm"># Verify install</span>
+<span class="kw">import</span> langchain
+print(langchain.__version__)</pre>
+    </div>
+  </div>
+
+  <div class="card theme-violet">
+    <div class="card-header">
+      <div class="card-icon">🔧</div>
+      <div>
+        <div class="card-title" style="color:#4c1d95;">Few-Shot Prompting</div>
+        <div class="card-subtitle">Examples in prompt template</div>
+      </div>
+    </div>
+    <div class="card-body">
+<pre><span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> <span class="cl">FewShotPromptTemplate</span>
+
+examples = [
+    {<span class="st">"input"</span>: <span class="st">"happy"</span>, <span class="st">"output"</span>: <span class="st">"sad"</span>},
+    {<span class="st">"input"</span>: <span class="st">"tall"</span>,  <span class="st">"output"</span>: <span class="st">"short"</span>}
+]
+ex_pt = <span class="cl">PromptTemplate</span>(
+    template=<span class="st">"Word: {input} → Antonym: {output}"</span>,
+    input_variables=[<span class="st">"input"</span>, <span class="st">"output"</span>])
+
+fs = <span class="cl">FewShotPromptTemplate</span>(
+    examples=examples,
+    example_prompt=ex_pt,
+    suffix=<span class="st">"Word: {input} → Antonym:"</span>,
+    input_variables=[<span class="st">"input"</span>])
+
+print(fs.<span class="fn">format</span>(input=<span class="st">"fast"</span>))</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>🦜 <strong>LangChain Cheatsheet</strong> — Core Components Reference</p>
+  <p>langchain.com · python.langchain.com/docs · pip install langchain</p>
+</div>
+
+</body>
+</html>
